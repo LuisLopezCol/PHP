@@ -1,0 +1,325 @@
+<?php
+
+
+
+$connect = new PDO('mysql:host=localhost; dbname=paxzupru_unionandina_v2', 'paxzupru_unionand_v2', 'sqji7sqNL+,}');
+#Petición para el elemento principal
+$query = "SELECT * FROM `wp_api_data` WHERE _id='{$_REQUEST['id']}'";
+$data = $connect->prepare($query);
+$data->execute(); 
+$response = $data->fetchAll();
+$carousel = json_decode($response[0]['carousel'], true); //Aquí guardamos fotos y videos
+
+#Petición para el carousel del final
+$priceCieling = $response[0]["priceMIN"]+50000000;
+$priceFloor = $response[0]["priceMIN"]-50000000;
+$queryCarousel = "SELECT * FROM `wp_api_data` WHERE city='{$response[0]["city"]}' AND priceMIN BETWEEN $priceFloor AND $priceCieling";
+$dataCarousel = $connect->prepare($queryCarousel);
+$dataCarousel->execute(); 
+$responseCarousel = $dataCarousel->fetchAll();
+
+get_header();
+
+?>
+    <main>
+        <div class="spacer"></div>
+        <section class="cont_sec_ajust_color_fondo">
+            <section class="s_header_page header_proyecto_int">
+                <span class="filter_gradient"></span>
+                <picture>
+                    <img width="1440" height="600" src="<?php echo THEME_IMG_PATH; ?>/diseno/07-como_invertir/img_header.jpg" alt="">
+                </picture>
+                <div class="center">
+                    <div class="cont_header_page">
+                        <div class="miga">
+                            <?php echo bcn_display($return = false, $linked = true, $reverse = false, $force = false);?>
+                        </div>
+                        <h2 class="title_page">
+                        <?php echo utf8_encode($response[0]['nickname']);?>
+                        </h2>
+                        <div class="cnt_ocmpartir_proy">
+                            <div class="etq_compartir_proy">COMPARTIR</div>
+                            <div class="cnt_ic_redeS_comp_proy">
+                                <span class="ic_comp_proy fab fa-facebook-f"></span>
+                                <span class="ic_comp_proy fab fa-whatsapp"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>   
+        </section>
+        <section class="s_proy_int">
+            <div class="center">
+                <div class="cont_gen_proy_int">           
+                   <div class="col_proy_int">
+                        <div class="cont_gen_gal_proy_int">
+                            <div class="img_grande_gal">
+                                <div class="swiper-container">
+                                    <div class="swiper-wrapper">
+                                        <div class="swiper-slide">
+                                            <div class="img_vid_gran_gal_rpoy_int">
+                                                <?php foreach($carousel as $video){
+                                                    if ($video['type']=="video") {
+                                                        foreach($carousel as $poster){
+                                                            if ($poster['type']=='photo') {
+                                                                echo "<video width='517' height='396' autoplay src='".$video['path']."' autoplay='true' loop controls poster='".$poster['path']."'></video>";
+                                                            continue;  //Solo necesitamos una foto, por ello rompemos el ciclo                                                          
+                                                            }
+                                                        }
+                                                }}?> 
+                                            </div>
+                                        </div>
+                                        <?php foreach($carousel as $picture){
+                                            if ($picture['type']=='photo') {  
+                                                echo "<div class='swiper-slide'>
+                                                    <div class='img_vid_gran_gal_rpoy_int'>
+                                                        '<img src='".$picture['path']."' width='517' height='396'/>';
+                                                    </div>
+                                                </div>";}
+                                            }?>
+                                    </div>
+                                    <div class="swiper-button-next"></div>
+                                    <div class="swiper-button-prev"></div>
+                                </div>
+                            </div>
+                            <div class="list_min_gal">
+                                <div class="swiper-container">
+                                    <div class="swiper-wrapper">
+                                            <?php foreach($carousel as $picture){ 
+                                                if ($picture['type']=="photo") {
+                                                    echo "<div class='swiper-slide'>
+                                                            <div class='min_gal_proy_int'>
+                                                                <img src='".$picture['path']."' width='20' height='20'/>
+                                                            </div>
+                                                    </div>";
+                                            }}?>          
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Initialize Swiper -->
+                            <script>
+                                $(document).ready(function(){
+                                      var swiper = new Swiper(".list_min_gal .swiper-container", {
+                                        spaceBetween: 23,
+                                        slidesPerView: 5,
+                                          breakpoints:{
+                                            0:{
+                                              slidesPerView:3
+                                            },
+                                            481:{
+                                              slidesPerView:4
+                                            },
+                                            781:{
+                                                slidesPerView:5
+                                            },
+                                        },
+                                        freeMode: true,
+                                        watchSlidesProgress: true,
+                                      });
+                                      var swiper2 = new Swiper(".img_grande_gal .swiper-container", {
+                                        spaceBetween: 10,
+                                        navigation: {
+                                          nextEl: ".swiper-button-next",
+                                          prevEl: ".swiper-button-prev",
+                                        },
+                                        thumbs: {
+                                          swiper: swiper,
+                                        },
+                                      });
+                                });
+                            </script>
+                        </div>
+                        <div class="cnt_ctas_proy_int">
+                            <a href="<?php foreach($carousel as $pdf){if ($pdf['type']=="presentation") {echo $pdf['path'];}}?>" target='_blank' class="btn_red_s pdf_proy_int">
+                                PROYECTO EN PDF 
+                                <span class="fas fa-chevron-right"></span>
+                            </a>
+                            <a href="" class="btn_red_s cotizar_proy_int">
+                                COTIZAR
+                                <span class="fas fa-chevron-right"></span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col_proy_int">
+                        <div class="cnt_gen_precio_proy">
+                            <div class="precio_proy">Desde  $ <?php echo number_format($response[0]['priceMIN'],0,',','.');?></div>
+                            <!--<select class="sel_divisa_proy">
+                                <option><?php echo $response[0]['currency'];?></option>
+                                <option>USD</option>
+                                <option>EU</option>
+                            </select>-->
+                        </div>
+                        <div class="desc_proy_int">
+                            <?php echo utf8_encode($response[0]['description']);?>
+                        </div>
+                        <div class="cnt_list_detalles">
+                            <div class="sub_h_accesos_proy_int">
+                                ACCESOS
+                            </div>
+                            <?php foreach(array_unique(json_decode($response[0]['areas'], true), SORT_REGULAR) as $area){ ?>
+                                <div class='ct_itm_detalle'>
+                                    <span class='ic_itm_detalle'></span>
+                                    <span class='txt_itm_detalle'>
+                                        <?php echo str_replace(utf8_encode($area['name']))?>
+                                    </span>
+                                </div>
+                            <?php }?>
+                        </div>
+
+                        <div class="cnt_list_detalles">
+                            <div class="sub_h_accesos_proy_int">
+                                ALREDEDORES
+                            </div>
+                            <?php foreach(array_unique(json_decode($response[0]['surroundings'], true), SORT_REGULAR) as $surrounding){ ?>
+                                <div class='ct_itm_detalle'>
+                                    <span class='ic_itm_detalle'></span>
+                                    <span class='txt_itm_detalle'><?php echo utf8_encode($surrounding['name'])?></span>
+                                </div>
+                            <?php }?>
+                        </div>
+                        <div class="cnt_tipo_proy_int">
+                            Tipo de vivienda: <b><?php echo utf8_encode($response[0]['propertyType']); ?></b>
+                        </div>                 
+                        <div class="cnt_gen_caract_proy_int">
+                            <div class="sub_h_accesos_proy_int">
+                                CARACTERÍSTICAS
+                            </div>
+                            <div class="fila_carac_proy_int">
+                                <div class="itm_carac_proy_int">
+                                    <span class="ic_carac_proy_int">
+                                        <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_area.svg">
+                                    </span>
+                                <div class="dato_det_proy_int">
+                                    <?php echo $response[0]['areaMIN'] ." ". utf8_encode($response[0]['areaUnit']); ?> 
+                                </div>
+                                </div>
+                                <div class="itm_carac_proy_int">
+                                    <span class="ic_carac_proy_int">
+                                        <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_bano.svg">
+                                    </span>
+                                    <div class="dato_det_proy_int">
+                                        <?php if ($response[0]['bathsMIN'] == NULL) {
+                                            echo "0 Baños";                                        
+                                        } else {
+                                            echo $response[0]['bathsMIN'] . " Baños";} ?>
+                                    </div>
+                                </div>
+                                <div class="itm_carac_proy_int">
+                                    <span class="ic_carac_proy_int">
+                                        <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_cama.svg">
+                                    </span>
+                                    <div class="dato_det_proy_int">
+                                        <?php echo $response[0]['roomsMIN'] . " Habitaciones"; ?>
+                                    </div>
+                                </div>
+                                <div class="itm_carac_proy_int">
+                                    <span class="ic_carac_proy_int">
+                                        <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_car.svg">
+                                    </span>
+                                    <div class="dato_det_proy_int">
+                                        <?php if ($response[0]['parkingsMIN'] == NULL && $response[0]['parkingsMAX'] == NULL) {
+                                            echo "0 Parqueaderos";                                        
+                                        } else {
+                                            if ($response[0]['parkingsMIN'] == NULL) {
+                                                echo $response[0]['parkingsMAX'] . " Parqueaderos";
+                                            } else {
+                                                echo $response[0]['parkingsMIN'] . " Parqueaderos";}
+                                        };?>
+                                    </div>
+                                </div>
+                            </div>-
+                        </div> 
+                    </div>                  
+                </div>
+            </div>
+            <span class="bottom">
+                <svg viewBox="0 0 1440 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1439 0H0C92.3333 26 369.4 78 739 78C1108.6 78 1359.67 26 1439 0Z" fill="#FAFAFA"/>
+                </svg>
+            </span>
+        </section>
+        <section class="s_ubicacion_proy_int">
+            <div class="center">
+                <div class="cont_titulo_ua">
+                    <h3>
+                       Ubicacion <br>
+                        <span>de la vivienda</span>
+                    </h3>
+                </div>
+                <div class="cont_mapa_proy_int">
+
+                    <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/map.jpg" />
+
+                </div>
+                <div class="cont_carr_viv_zona">
+                    <div class="swiper-container">
+                        <div class="swiper-wrapper">
+                            <?php foreach ($responseCarousel as $responseCarousel) { ?>
+                                <div class="swiper-slide">
+                                    <div class="card_viv_zona">
+                                        <a href="interna_proyecto.html" class="cnt_img_card_viv_zona">
+                                            <picture class="img_card_viv_zona">
+                                                <img src="<?php echo $responseCarousel['mainPhoto'] ?>" width="286" height="225" alt="" title=""/>
+                                            </picture>
+                                            <div class="ubicacion_card_viv_zona"><?php echo utf8_encode($responseCarousel['city']) ?>, <?php echo utf8_encode($responseCarousel['zone']) ?></div>
+                                            <?php
+                                                if (($responseCarousel['isVisAvailable'] == true)) {
+                                                    echo "<div class='sub_card_viv_zona'>
+                                                        <i class='fas fa-dollar-sign'></i>
+                                                        Aplica subsidio de vivienda
+                                                    </div>";
+                                            }?>                                        
+                                        </a>
+                                        <div class="inf_card_viv_zona">
+                                            <div class="h_card_viv_zona">
+                                            <?php echo utf8_encode($responseCarousel['name']) ?>
+                                            </div>
+                                            <div class="precio_card_viv_zona">
+                                                Desde  $<?php echo number_format($responseCarousel['priceMIN'],0,',','.') ?>
+                                            </div>                                        
+                                            <div class="cnt_itm_desc_card_viv_zona">
+                                                <span class="ic_desc">
+                                                    <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_area.svg"/>
+                                                </span> 
+                                                <span class="txt_desc"><?php echo $responseCarousel['areaMIN']." " .utf8_encode($responseCarousel['areaUnit']) ?> </span>
+                                            </div>
+                                            <div class="cnt_itm_desc_card_viv_zona">
+                                                <span class="ic_desc">
+                                                    <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_cama.svg"/>                                              
+                                                </span> 
+                                                <span class="txt_desc"><?php echo $responseCarousel['roomsMIN'] ?> Habitaciones</span>
+                                            </div>
+                                            <div class="cnt_itm_desc_card_viv_zona">
+                                                <span class="ic_desc">
+                                                    <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_bano.svg"/>
+                                                </span> 
+                                                <span class="txt_desc"><?php echo $responseCarousel['bathsMIN'] ?> Baños</span>
+                                            </div>
+                                            <div class="cnt_itm_desc_card_viv_zona">
+                                                <span class="ic_desc">
+                                                    <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_car.svg"/>
+                                                </span> 
+                                                <span class="txt_desc"><?php echo $responseCarousel['parkingsMIN'] ?> Parqueaderos</span>
+                                            </div>
+                                        </div>
+                                        <a href="https://paxzupruebas.com/unionandina_v2/proyecto-interna/?id=<?php echo $responseCarousel['_id']?>" class="btn_red_s btn_card_viv_zona">
+                                            CONOCE EL PROYECTO
+                                            <span class="fas fa-chevron-right"></span>
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php };?>
+                        </div>
+                    </div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>              
+            </div>
+        </section>       
+    </main>
+
+<?php
+
+
+
+get_footer();
