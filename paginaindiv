@@ -1,0 +1,203 @@
+<?php
+
+/**
+
+ * The main template file
+
+ *
+
+ * This is the most generic template file in a WordPress theme
+
+ * and one of the two required files for a theme (the other being style.css).
+
+ * It is used to display a page when nothing more specific matches a query.
+
+ * E.g., it puts together the home page when no home.php file exists.
+
+ *
+
+ * @link https://developer.wordpress.org/themes/basics/template-hierarchy/
+
+ *
+
+ * @package unionandina
+
+ */
+
+get_header();
+
+//DBB Connection
+$connect = new PDO('mysql:host=localhost; dbname=paxzupru_unionandina_v2', 'paxzupru_unionand_v2', 'sqji7sqNL+,}');
+
+//Filtro de busqueda
+$priceFilter = explode('-',$_REQUEST['priceRange']);
+$cityFilter = utf8_encode($_REQUEST['city']);
+if ($cityFilter == NULL && $priceFilter[0] != NULL) {
+    $filter = 'WHERE priceMIN > '.$priceFilter[0].' AND priceMAX < '.$priceFilter[1].';'; 
+} elseif ($cityFilter != NULL && $priceFilter[0] == NULL) {
+    $filter = 'WHERE city="'.$cityFilter.'";'; 
+} elseif ($cityFilter != NULL && $priceFilter[0] != NULL) {
+    $filter = 'WHERE city="'.$cityFilter.'" AND priceMIN > '.$priceFilter[0].' AND priceMAX < '.$priceFilter[1].';'; 
+} else{
+    $filter = "";
+}
+
+//Get data
+$query = 'SELECT * FROM `wp_api_data` '.$filter;
+$data = $connect->prepare($query);
+$data->execute(); 
+$response = $data->fetchAll();
+
+//Get cities list 
+$queryFilterCity = 'SELECT DISTINCT city FROM `wp_api_data` ORDER BY city ASC';
+$dataFilterCity = $connect->prepare($queryFilterCity);
+$dataFilterCity->execute(); 
+$responseFilterCity = $dataFilterCity->fetchAll();
+
+//Get MIN apartmet value
+$queryFilterMinPrice = 'SELECT MIN(priceMIN) city FROM `wp_api_data`';
+$dataFilterMinPrice = $connect->prepare($queryFilterMinPrice);
+$dataFilterMinPrice->execute(); 
+// $responseMinPrice = $dataFilterMinPrice->fetchAll();
+$responseMinPrice = 100000000;
+
+//Get MIN apartmet value
+$queryFilterMaxPrice = 'SELECT MAX(priceMAX) FROM `wp_api_data`';
+$dataFilterMaxPrice = $connect->prepare($queryFilterMaxPrice);
+$dataFilterMaxPrice->execute(); 
+//$responseMaxPrice = $dataFilterMaxPrice->fetchAll();
+$responseMaxPrice = 1000000000;
+
+$city = $_REQUEST['city'];
+$priceRange = explode("-",$_REQUEST['priceRange']);
+?>
+
+<main>
+    <div class="spacer"></div>   
+    <section class="s_header_page">       
+        <span class="filter_gradient"></span>      
+        <picture>        
+            <img width="1440" height="600" src="<?php the_field('imagen_banner'); ?>" alt="">           
+        </picture>
+            <div class="center">
+                <div class="cont_header_page">
+                    <div class="miga">
+                        <?php echo bcn_display($return = false, $linked = true, $reverse = false, $force = false);?>
+                    </div>
+                    <div class="cnt_gen_buscador">
+                        <div class="h_buscador_casa"><?php the_field('titulo_formulario'); ?></div>
+                        <form class="form_duscar_casa" method="GET" action="https://paxzupruebas.com/unionandina_v2/encuentra-casa/">
+                            <div class="campos_form_buscar_casa">
+                                <div class="cnt_campo_form w_50">
+                                    <div class="cont_input">
+                                        <select name="city" id="">
+                                            <option value='' disabled selected>Selecciona la ciudad</option>
+                                            <?php foreach($responseFilterCity as $filterCity){   
+                                                echo "<option value='".$filterCity['city']."'>".utf8_encode($filterCity['city'])."</option>";
+                                            } ?>    
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="cnt_campo_form w_50">
+                                    <div class="cont_input">
+                                        <select name="priceRange" id="">
+                                            <option value="" selected disabled>Rango de precios</option>
+                                                <?php 
+                                                    for($min = round($responseMinPrice,-7), $gap = 150000000, $cieling = $min + $gap; $min <= $responseMaxPrice; $min += $gap, $cieling = $min + $gap){   
+                                                    echo "<option value='".$min."-"."$cieling"."'>".$min." - "."$cieling"."</option>";
+                                                }?> 
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                                <input type="submit" value="Buscar" class="btn_buscar_casa"/> 
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>                                                  
+        <section class="s_viv_zona">
+            <div class="center">         
+                <div class="cont_titulo_ua">
+                    <h3>
+                        Viviendas en la zona <br>
+                    </h3>
+                </div>
+                <div class="cont_mapa_viv_zona">
+                    <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/map.jpg" />
+                </div>           
+                <div class="cont_carr_viv_zona">
+                    <div class="swiper-container">
+                        <div class="swiper-wrapper">                     
+                            <?php foreach ($response as $responseCarousel) { ?>
+                            <div class="swiper-slide">
+                                <div class="card_viv_zona">
+                                    <a href="interna_proyecto.html" class="cnt_img_card_viv_zona">
+                                        <picture class="img_card_viv_zona">
+                                            <img src="<?php echo $responseCarousel['mainPhoto'] ?>" width="286" height="225" alt="" title=""/>
+                                        </picture>
+                                        <div class="ubicacion_card_viv_zona"><?php echo utf8_encode($responseCarousel['city']) ?>, <?php echo utf8_encode($responseCarousel['zone']) ?></div>
+                                        <?php
+                                            if (($responseCarousel['isVisAvailable'] == true)) {
+                                                echo "<div class='sub_card_viv_zona'>
+                                                    <i class='fas fa-dollar-sign'></i>
+                                                    Aplica subsidio de vivienda
+                                                </div>";
+                                        }?>                                        
+                                    </a>
+                                    <div class="inf_card_viv_zona">
+                                        <div class="h_card_viv_zona">
+                                        <?php echo utf8_encode($responseCarousel['name']) ?>
+                                        </div>
+                                        <div class="precio_card_viv_zona">
+                                            Desde  $<?php echo number_format($responseCarousel['priceMIN'],0,',','.') ?>
+                                        </div>                                        
+                                        <div class="cnt_itm_desc_card_viv_zona">
+                                            <span class="ic_desc">
+                                                <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_area.svg"/>
+                                            </span> 
+                                            <span class="txt_desc"><?php echo $responseCarousel['areaMIN']." " .utf8_encode($responseCarousel['areaUnit']) ?> </span>
+                                        </div>
+                                        <div class="cnt_itm_desc_card_viv_zona">
+                                            <span class="ic_desc">
+                                                <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_cama.svg"/>                                              
+                                            </span> 
+                                            <span class="txt_desc"><?php echo $responseCarousel['roomsMIN'] ?> Habitaciones</span>
+                                        </div>
+                                        <div class="cnt_itm_desc_card_viv_zona">
+                                            <span class="ic_desc">
+                                                <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_bano.svg"/>
+                                            </span> 
+                                            <span class="txt_desc"><?php echo $responseCarousel['bathsMIN'] ?> Baños</span>
+                                        </div>
+                                        <div class="cnt_itm_desc_card_viv_zona">
+                                            <span class="ic_desc">
+                                                <img src="<?php echo THEME_IMG_PATH; ?>/diseno/05-encuentra/ic_car.svg"/>
+                                            </span> 
+                                            <span class="txt_desc"><?php echo $responseCarousel['parkingsMIN'] ?>Parqueaderos</span>
+                                        </div>
+                                    </div>
+                                    <a href="https://paxzupruebas.com/unionandina_v2/proyecto-interna/?id=<?php echo $responseCarousel['_id']?>" class="btn_red_s btn_card_viv_zona">
+                                        CONOCE EL PROYECTO
+                                        <span class="fas fa-chevron-right"></span>
+                                    </a>
+                                </div>
+                            </div>
+                            <?php };?>
+                        </div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                </div>
+                 <div class="cont_gen_vid_viv_zona">
+                    <div class="vid_viv_zona">
+                        <iframe width="560" height="315" src="<?php the_field('video_url'); ?>" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+<?php
+
+
+
+get_footer();
